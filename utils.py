@@ -1,6 +1,5 @@
 import streamlit as st
 from langchain_community.embeddings import FastEmbedEmbeddings
-from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 def configure_embedding_models():
@@ -21,8 +20,8 @@ def configure_embedding_models():
 def get_embedding_model(model_name):
     return FastEmbedEmbeddings(model_name=model_name)
 
-def calculate_similarity(embeddings1, embeddings2):
-    return cosine_similarity(embeddings1.reshape(1, -1), embeddings2.reshape(1, -1))[0][0]
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 def process_texts(texts, embedding_models):
     results = {}
@@ -33,7 +32,7 @@ def process_texts(texts, embedding_models):
         similarity_matrix = np.zeros((len(texts), len(texts)))
         for i in range(len(texts)):
             for j in range(i+1, len(texts)):
-                similarity = calculate_similarity(embeddings[i], embeddings[j])
+                similarity = cosine_similarity(embeddings[i], embeddings[j])
                 similarity_matrix[i][j] = similarity
                 similarity_matrix[j][i] = similarity
         
