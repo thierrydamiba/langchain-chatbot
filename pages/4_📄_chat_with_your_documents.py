@@ -1,111 +1,115 @@
 import os
-import utils
+import openai
 import streamlit as st
-from streaming import StreamHandler
+from datetime import datetime
+from streamlit.logger import get_logger
+from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOllama
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.vectorstores import DocArrayInMemorySearch
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+logger = get_logger('Langchain-Chatbot')
 
+# decorator
+def enable_chat_history(func):
+    if os.environ.get("OPENAI_API_KEY"):
+        # to clear chat history after switching chatbot
+        current_page = func.__qualname__
+        if "current_page" not in st.session_state:
+            st.session_state["current_page"] = current_page
+        if st.session_state["current_page"] != current_page:
+            try:
+                st.cache_resource.clear()
+                del st.session_state["current_page"]
+                del st.session_state["messages"]
+            except:
+                pass
+        # to show chat history on ui
+        if "messages" not in st.session_state:
+            st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+        for msg in st.session_state["messages"]:
+            st.chat_message(msg["role"]).write(msg["content"])
+    def execute(*args, **kwargs):
+        func(*args, **kwargs)
+    return execute
 
-st.set_page_config(page_title="ChatPDF", page_icon="📄")
-st.header('Chat with your documents! (Basic RAG)')
-st.write('Has access to custom documents and can respond to user queries by referring to the content within those documents')
-st.write('[![view source code ](https://img.shields.io/badge/view_source_code-gray?logo=github)](https://github.com/shashankdeshpande/langchain-chatbot/blob/master/pages/4_%F0%9F%93%84_chat_with_your_documents.py)')
+def display_msg(msg, author):
+    """Method to display message on the UI
+    Args:
+        msg (str): message to display
+        author (str): author of the message -user/assistant
+    """
+    st.session_state.messages.append({"role": author, "content": msg})
+    st.chat_message(author).write(msg)
 
-class CustomDocChatbot:
-
-    def __init__(self):
-        utils.sync_st_session()
-        self.llm = utils.configure_llm()
-        self.embedding_model = utils.configure_embedding_model()
-
-    def save_file(self, file):
-        folder = 'tmp'
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        
-        file_path = f'./{folder}/{file.name}'
-        with open(file_path, 'wb') as f:
-            f.write(file.getvalue())
-        return file_path
-
-    @st.spinner('Analyzing documents..')
-    def setup_qa_chain(self, uploaded_files):
-        # Load documents
-        docs = []
-        for file in uploaded_files:
-            file_path = self.save_file(file)
-            loader = PyPDFLoader(file_path)
-            docs.extend(loader.load())
-        
-        # Split documents and store in vector db
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200
+def choose_custom_openai_key():
+    openai_api_key = st.sidebar.text_input(
+        label="OpenAI API Key",
+        type="password",
+        placeholder="sk-...",
+        key="SELECTED_OPENAI_API_KEY"
         )
-        splits = text_splitter.split_documents(docs)
-        vectordb = DocArrayInMemorySearch.from_documents(splits, self.embedding_model)
-
-        # Define retriever
-        retriever = vectordb.as_retriever(
-            search_type='mmr',
-            search_kwargs={'k':2, 'fetch_k':4}
+    if not openai_api_key:
+        st.error("Please add your OpenAI API key to continue.")
+        st.info("Obtain your key from this link: https://platform.openai.com/account/api-keys")
+        st.stop()
+    model = "gpt-4o-mini"
+    try:
+        client = openai.OpenAI(api_key=openai_api_key)
+        available_models = [{"id": i.id, "created":datetime.fromtimestamp(i.created)} for i in client.models.list() if str(i.id).startswith("gpt")]
+        available_models = sorted(available_models, key=lambda x: x["created"])
+        available_models = [i["id"] for i in available_models]
+        model = st.sidebar.selectbox(
+            label="Model",
+            options=available_models,
+            key="SELECTED_OPENAI_MODEL"
         )
+    except openai.AuthenticationError as e:
+        st.error(e.body["message"])
+        st.stop()
+    except Exception as e:
+        print(e)
+        st.error("Something went wrong. Please try again later.")
+        st.stop()
+    return model, openai_api_key
 
-        # Setup memory for contextual conversation        
-        memory = ConversationBufferMemory(
-            memory_key='chat_history',
-            output_key='answer',
-            return_messages=True
+def configure_llm():
+    available_llms = ["gpt-4o-mini","llama3.1:8b","use your openai api key"]
+    llm_opt = st.sidebar.radio(
+        label="LLM",
+        options=available_llms,
+        key="SELECTED_LLM"
         )
+    if llm_opt == "llama3.1:8b":
+        llm = ChatOllama(model="llama3.1", base_url=st.secrets["OLLAMA_ENDPOINT"])
+    elif llm_opt == "gpt-4o-mini":
+        llm = ChatOpenAI(model_name=llm_opt, temperature=0, streaming=True, api_key=st.secrets["OPENAI_API_KEY"])
+    else:
+        model, openai_api_key = choose_custom_openai_key()
+        llm = ChatOpenAI(model_name=model, temperature=0, streaming=True, api_key=openai_api_key)
+    return llm
 
-        # Setup LLM and QA chain
-        qa_chain = ConversationalRetrievalChain.from_llm(
-            llm=self.llm,
-            retriever=retriever,
-            memory=memory,
-            return_source_documents=True,
-            verbose=False
-        )
-        return qa_chain
+def print_qa(cls, question, answer):
+    log_str = "\nUsecase: {}\nQuestion: {}\nAnswer: {}\n" + "------"*10
+    logger.info(log_str.format(cls.__name__, question, answer))
 
-    @utils.enable_chat_history
-    def main(self):
+def select_embedding_model():
+    available_embedding_models = ["BAAI/bge-small-en-v1.5", "BAAI/bge-small-zh-v1.5"]
+    selected_model = st.sidebar.selectbox(
+        label="Embedding Model",
+        options=available_embedding_models,
+        key="SELECTED_EMBEDDING_MODEL"
+    )
+    return selected_model
 
-        # User Inputs
-        uploaded_files = st.sidebar.file_uploader(label='Upload PDF files', type=['pdf'], accept_multiple_files=True)
-        if not uploaded_files:
-            st.error("Please upload PDF documents to continue!")
-            st.stop()
+@st.cache_resource
+def get_embedding_model(model_name):
+    embedding_model = FastEmbedEmbeddings(model_name=model_name)
+    return embedding_model
 
-        user_query = st.chat_input(placeholder="Ask me anything!")
+def configure_embedding_model():
+    selected_model = select_embedding_model()
+    return get_embedding_model(selected_model)
 
-        if uploaded_files and user_query:
-            qa_chain = self.setup_qa_chain(uploaded_files)
-
-            utils.display_msg(user_query, 'user')
-
-            with st.chat_message("assistant"):
-                st_cb = StreamHandler(st.empty())
-                result = qa_chain.invoke(
-                    {"question":user_query},
-                    {"callbacks": [st_cb]}
-                )
-                response = result["answer"]
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                utils.print_qa(CustomDocChatbot, user_query, response)
-
-                # to show references
-                for idx, doc in enumerate(result['source_documents'],1):
-                    filename = os.path.basename(doc.metadata['source'])
-                    page_num = doc.metadata['page']
-                    ref_title = f":blue[Reference {idx}: *{filename} - page.{page_num}*]"
-                    with st.popover(ref_title):
-                        st.caption(doc.page_content)
-
-if __name__ == "__main__":
-    obj = CustomDocChatbot()
-    obj.main()
+def sync_st_session():
+    for k, v in st.session_state.items():
+        st.session_state[k] = v
