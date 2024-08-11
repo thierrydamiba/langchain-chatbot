@@ -42,21 +42,25 @@ def configure_embedding_models():
         cols = st.sidebar.columns(3)
         for i, model in enumerate(models):
             model_name = model.split('/')[-1]
-            button_color = "rgb(255, 0, 0)" if model in st.session_state.selected_models else "rgb(255, 255, 255)"
+            is_selected = model in st.session_state.selected_models
+            button_color = "rgb(255, 0, 0)" if is_selected else "rgb(255, 255, 255)"
+            
             if cols[i % 3].button(
                 model_name,
-                key=model,
+                key=f"btn_{model}",
                 help=f"Select/Deselect {model_name}",
-                on_click=lambda m=model: toggle_model(m),
                 type="primary",
                 use_container_width=True
             ):
-                pass  # The on_click handler will handle the toggling
+                if is_selected:
+                    st.session_state.selected_models.remove(model)
+                else:
+                    st.session_state.selected_models.append(model)
 
             # Apply custom CSS to change button color
             custom_css = f"""
                 <style>
-                    div[data-testid="stHorizontalBlock"] div[data-testid="column"] div[data-testid="stButton"] button {{
+                    div[data-testid="stHorizontalBlock"] div[data-testid="column"] div[data-testid="stButton"] button[key="btn_{model}"] {{
                         background-color: {button_color};
                         color: black;
                         border: 1px solid black;
@@ -70,13 +74,6 @@ def configure_embedding_models():
         st.sidebar.write(f"- {model.split('/')[-1]}")
 
     return st.session_state.selected_models
-
-def toggle_model(model):
-    if model in st.session_state.selected_models:
-        st.session_state.selected_models.remove(model)
-    else:
-        st.session_state.selected_models.append(model)
-    st.experimental_rerun()
 
 def get_embedding_model(model_name):
     return FastEmbedEmbeddings(model_name=model_name)
