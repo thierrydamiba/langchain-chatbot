@@ -2,18 +2,43 @@ import streamlit as st
 from langchain_community.embeddings import FastEmbedEmbeddings
 import numpy as np
 
+def get_fastembed_models():
+    text_models = [
+        "BAAI/bge-small-en-v1.5", "BAAI/bge-small-zh-v1.5", "snowflake/snowflake-arctic-embed-xs",
+        "sentence-transformers/all-MiniLM-L6-v2", "jinaai/jina-embeddings-v2-small-en",
+        "BAAI/bge-small-en", "snowflake/snowflake-arctic-embed-s", "nomic-ai/nomic-embed-text-v1.5-Q",
+        "BAAI/bge-base-en-v1.5", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "Qdrant/clip-ViT-B-32-text", "jinaai/jina-embeddings-v2-base-de", "BAAI/bge-base-en",
+        "snowflake/snowflake-arctic-embed-m", "nomic-ai/nomic-embed-text-v1.5",
+        "jinaai/jina-embeddings-v2-base-en", "nomic-ai/nomic-embed-text-v1",
+        "snowflake/snowflake-arctic-embed-m-long", "mixedbread-ai/mxbai-embed-large-v1",
+        "jinaai/jina-embeddings-v2-base-code", "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+        "snowflake/snowflake-arctic-embed-l", "thenlper/gte-large", "BAAI/bge-large-en-v1.5",
+        "intfloat/multilingual-e5-large"
+    ]
+    
+    sparse_text_models = [
+        "Qdrant/bm25", "Qdrant/bm42-all-minilm-l6-v2-attentions",
+        "prithvida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v1"
+    ]
+    
+    late_interaction_models = ["colbert-ir/colbertv2.0"]
+    
+    image_models = [
+        "Qdrant/resnet50-onnx", "Qdrant/clip-ViT-B-32-vision",
+        "Qdrant/Unicom-ViT-B-32", "Qdrant/Unicom-ViT-B-16"
+    ]
+    
+    all_models = text_models + sparse_text_models + late_interaction_models + image_models
+    return all_models
+
 def configure_embedding_models():
-    available_embedding_models = {
-        "BAAI/bge-small-en-v1.5": "English",
-        "BAAI/bge-small-zh-v1.5": "Chinese",
-        "BAAI/bge-base-en-v1.5": "English (Base)",
-        "BAAI/bge-base-zh-v1.5": "Chinese (Base)"
-    }
+    available_models = get_fastembed_models()
     selected_models = st.sidebar.multiselect(
         label="Select Embedding Models",
-        options=list(available_embedding_models.keys()),
-        default=["BAAI/bge-small-en-v1.5"],
-        format_func=lambda x: f"{x} ({available_embedding_models[x]})"
+        options=available_models,
+        default=[available_models[0]],
+        format_func=lambda x: x.split('/')[-1]
     )
     return selected_models
 
@@ -41,7 +66,7 @@ def process_texts(texts, embedding_models):
 
 def display_results(results, texts):
     for model_name, similarity_matrix in results.items():
-        st.subheader(f"Results for {model_name}")
+        st.subheader(f"Results for {model_name.split('/')[-1]}")
         for i in range(len(texts)):
             for j in range(i+1, len(texts)):
                 st.write(f"Similarity between Text {i+1} and Text {j+1}: {similarity_matrix[i][j]:.4f}")
