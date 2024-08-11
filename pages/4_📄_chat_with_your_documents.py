@@ -9,7 +9,6 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-
 st.set_page_config(page_title="ChatPDF", page_icon="📄")
 st.header('Chat with your documents (Basic RAG)')
 st.write('Has access to custom documents and can respond to user queries by referring to the content within those documents')
@@ -74,7 +73,6 @@ class CustomDocChatbot:
 
     @utils.enable_chat_history
     def main(self):
-
         # User Inputs
         uploaded_files = st.sidebar.file_uploader(label='Upload PDF files', type=['pdf'], accept_multiple_files=True)
         if not uploaded_files:
