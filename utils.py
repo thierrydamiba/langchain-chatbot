@@ -28,60 +28,23 @@ def get_fastembed_models():
         ]
     }
 
-def initialize_session_state():
-    if 'selected_models' not in st.session_state:
-        all_models = [model for models in get_fastembed_models().values() for model in models]
-        st.session_state.selected_models = all_models[:2]
-
-def toggle_model(model):
-    if model in st.session_state.selected_models:
-        st.session_state.selected_models.remove(model)
-    else:
-        st.session_state.selected_models.append(model)
-
 def configure_embedding_models():
-    initialize_session_state()
     available_models = get_fastembed_models()
-
+    all_models = [model for models in available_models.values() for model in models]
+    
     st.sidebar.write("### Select Embedding Models")
-    for category, models in available_models.items():
-        st.sidebar.write(f"#### {category}")
-        cols = st.sidebar.columns(3)
-        for i, model in enumerate(models):
-            model_name = model.split('/')[-1]
-            is_selected = model in st.session_state.selected_models
-            button_color = "rgb(255, 0, 0)" if is_selected else "rgb(255, 255, 255)"
-            
-            if cols[i % 3].button(
-                model_name,
-                key=f"btn_{model}",
-                help=f"Select/Deselect {model_name}",
-                on_click=toggle_model,
-                args=(model,),
-                type="primary",
-                use_container_width=True
-            ):
-                pass
-
-            # Apply custom CSS to change button color
-            st.markdown(
-                f"""
-                <style>
-                    div[data-testid="stHorizontalBlock"] div[data-testid="column"] div[data-testid="stButton"] button[kind="primary"][data-testid="btn_{model}"] {{
-                        background-color: {button_color};
-                        color: black;
-                        border: 1px solid black;
-                    }}
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
+    selected_models = st.sidebar.multiselect(
+        "Choose models to compare",
+        options=all_models,
+        default=all_models[:2],
+        format_func=lambda x: x.split('/')[-1]
+    )
 
     st.sidebar.write("### Selected Models:")
-    for model in st.session_state.selected_models:
+    for model in selected_models:
         st.sidebar.write(f"- {model.split('/')[-1]}")
 
-    return st.session_state.selected_models
+    return selected_models
 
 def get_embedding_model(model_name):
     return FastEmbedEmbeddings(model_name=model_name)
