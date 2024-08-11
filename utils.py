@@ -1,6 +1,10 @@
 import streamlit as st
 from langchain_community.embeddings import FastEmbedEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 import numpy as np
+import PyPDF2
+import docx
+import random
 
 def get_fastembed_models():
     return {
@@ -75,3 +79,28 @@ def display_results(results, texts):
             for j in range(i+1, len(texts)):
                 st.write(f"Similarity between Text {i+1} and Text {j+1}: {similarity_matrix[i][j]:.4f}")
         st.write("---")
+
+def extract_text_from_file(uploaded_file):
+    file_extension = uploaded_file.name.split('.')[-1].lower()
+    
+    if file_extension == 'txt':
+        return uploaded_file.getvalue().decode('utf-8')
+    elif file_extension == 'pdf':
+        pdf_reader = PyPDF2.PdfReader(uploaded_file)
+        return ' '.join(page.extract_text() for page in pdf_reader.pages)
+    elif file_extension in ['docx', 'doc']:
+        doc = docx.Document(uploaded_file)
+        return ' '.join(paragraph.text for paragraph in doc.paragraphs)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+def chunk_text(text, chunk_size=1000, chunk_overlap=200):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len
+    )
+    return text_splitter.split_text(text)
+
+def sample_chunks(chunks, num_samples=5):
+    return random.sample(chunks, min(num_samples, len(chunks)))
