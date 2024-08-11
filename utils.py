@@ -28,13 +28,20 @@ def get_fastembed_models():
         ]
     }
 
-def configure_embedding_models():
-    available_models = get_fastembed_models()
-    
+def initialize_session_state():
     if 'selected_models' not in st.session_state:
-        # Select the first two models by default
-        all_models = [model for models in available_models.values() for model in models]
+        all_models = [model for models in get_fastembed_models().values() for model in models]
         st.session_state.selected_models = all_models[:2]
+
+def toggle_model(model):
+    if model in st.session_state.selected_models:
+        st.session_state.selected_models.remove(model)
+    else:
+        st.session_state.selected_models.append(model)
+
+def configure_embedding_models():
+    initialize_session_state()
+    available_models = get_fastembed_models()
 
     st.sidebar.write("### Select Embedding Models")
     for category, models in available_models.items():
@@ -49,25 +56,26 @@ def configure_embedding_models():
                 model_name,
                 key=f"btn_{model}",
                 help=f"Select/Deselect {model_name}",
+                on_click=toggle_model,
+                args=(model,),
                 type="primary",
                 use_container_width=True
             ):
-                if is_selected:
-                    st.session_state.selected_models.remove(model)
-                else:
-                    st.session_state.selected_models.append(model)
+                pass
 
             # Apply custom CSS to change button color
-            custom_css = f"""
+            st.markdown(
+                f"""
                 <style>
-                    div[data-testid="stHorizontalBlock"] div[data-testid="column"] div[data-testid="stButton"] button[key="btn_{model}"] {{
+                    div[data-testid="stHorizontalBlock"] div[data-testid="column"] div[data-testid="stButton"] button[kind="primary"][data-testid="btn_{model}"] {{
                         background-color: {button_color};
                         color: black;
                         border: 1px solid black;
                     }}
                 </style>
-            """
-            st.markdown(custom_css, unsafe_allow_html=True)
+                """,
+                unsafe_allow_html=True
+            )
 
     st.sidebar.write("### Selected Models:")
     for model in st.session_state.selected_models:
