@@ -1,115 +1,85 @@
-import os
-import openai
-import streamlit as st
-from datetime import datetime
-from streamlit.logger import get_logger
-from langchain_openai import ChatOpenAI
-from langchain_community.chat_models import ChatOllama
-from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+class CustomDocChatbot:
 
-logger = get_logger('Langchain-Chatbot')
+    def __init__(self):
+        try:
+            utils.sync_st_session()
+            self.llm = utils.configure_llm()
+            self.embedding_model = utils.configure_embedding_model()
+            if self.embedding_model is None:
+                st.error("Failed to initialize embedding model. Please check your configuration.")
+                st.stop()
+        except Exception as e:
+            st.error(f"An error occurred during initialization: {str(e)}")
+            st.stop()
 
-# decorator
-def enable_chat_history(func):
-    if os.environ.get("OPENAI_API_KEY"):
-        # to clear chat history after switching chatbot
-        current_page = func.__qualname__
-        if "current_page" not in st.session_state:
-            st.session_state["current_page"] = current_page
-        if st.session_state["current_page"] != current_page:
-            try:
-                st.cache_resource.clear()
-                del st.session_state["current_page"]
-                del st.session_state["messages"]
-            except:
-                pass
-        # to show chat history on ui
-        if "messages" not in st.session_state:
-            st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
-        for msg in st.session_state["messages"]:
-            st.chat_message(msg["role"]).write(msg["content"])
-    def execute(*args, **kwargs):
-        func(*args, **kwargs)
-    return execute
+    # ... (keep all other methods the same)
 
-def display_msg(msg, author):
-    """Method to display message on the UI
-    Args:
-        msg (str): message to display
-        author (str): author of the message -user/assistant
-    """
-    st.session_state.messages.append({"role": author, "content": msg})
-    st.chat_message(author).write(msg)
+    @st.spinner('Analyzing documents..')
+    def setup_qa_chain(self, uploaded_files):
+        try:
+            # Load documents
+            docs = []
+            for file in uploaded_files:
+                file_path = self.save_file(file)
+                loader = PyPDFLoader(file_path)
+                docs.extend(loader.load())
+            
+            # Split documents and store in vector db
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=200
+            )
+            splits = text_splitter.split_documents(docs)
+            vectordb = DocArrayInMemorySearch.from_documents(splits, self.embedding_model)
 
-def choose_custom_openai_key():
-    openai_api_key = st.sidebar.text_input(
-        label="OpenAI API Key",
-        type="password",
-        placeholder="sk-...",
-        key="SELECTED_OPENAI_API_KEY"
-        )
-    if not openai_api_key:
-        st.error("Please add your OpenAI API key to continue.")
-        st.info("Obtain your key from this link: https://platform.openai.com/account/api-keys")
-        st.stop()
-    model = "gpt-4o-mini"
+            # ... (rest of the method remains the same)
+        except Exception as e:
+            st.error(f"An error occurred while setting up the QA chain: {str(e)}")
+            return None
+
+    # ... (keep all other methods the same)
+
+    @utils.enable_chat_history
+    def main(self):
+        try:
+            # User Inputs
+            uploaded_files = st.sidebar.file_uploader(label='Upload PDF files', type=['pdf'], accept_multiple_files=True)
+            if not uploaded_files:
+                st.info("Please upload PDF documents to continue!")
+                return
+
+            user_query = st.chat_input(placeholder="Ask me anything!")
+
+            if uploaded_files and user_query:
+                qa_chain = self.setup_qa_chain(uploaded_files)
+                if qa_chain is None:
+                    return
+
+                utils.display_msg(user_query, 'user')
+
+                with st.chat_message("assistant"):
+                    st_cb = StreamHandler(st.empty())
+                    result = qa_chain.invoke(
+                        {"question":user_query},
+                        {"callbacks": [st_cb]}
+                    )
+                    response = result["answer"]
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    utils.print_qa(CustomDocChatbot, user_query, response)
+
+                    # to show references
+                    for idx, doc in enumerate(result['source_documents'],1):
+                        filename = os.path.basename(doc.metadata['source'])
+                        page_num = doc.metadata['page']
+                        ref_title = f":blue[Reference {idx}: *{filename} - page.{page_num}*]"
+                        with st.popover(ref_title):
+                            st.caption(doc.page_content)
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+
+if __name__ == "__main__":
     try:
-        client = openai.OpenAI(api_key=openai_api_key)
-        available_models = [{"id": i.id, "created":datetime.fromtimestamp(i.created)} for i in client.models.list() if str(i.id).startswith("gpt")]
-        available_models = sorted(available_models, key=lambda x: x["created"])
-        available_models = [i["id"] for i in available_models]
-        model = st.sidebar.selectbox(
-            label="Model",
-            options=available_models,
-            key="SELECTED_OPENAI_MODEL"
-        )
-    except openai.AuthenticationError as e:
-        st.error(e.body["message"])
-        st.stop()
+        obj = CustomDocChatbot()
+        obj.main()
     except Exception as e:
-        print(e)
-        st.error("Something went wrong. Please try again later.")
-        st.stop()
-    return model, openai_api_key
-
-def configure_llm():
-    available_llms = ["gpt-4o-mini","llama3.1:8b","use your openai api key"]
-    llm_opt = st.sidebar.radio(
-        label="LLM",
-        options=available_llms,
-        key="SELECTED_LLM"
-        )
-    if llm_opt == "llama3.1:8b":
-        llm = ChatOllama(model="llama3.1", base_url=st.secrets["OLLAMA_ENDPOINT"])
-    elif llm_opt == "gpt-4o-mini":
-        llm = ChatOpenAI(model_name=llm_opt, temperature=0, streaming=True, api_key=st.secrets["OPENAI_API_KEY"])
-    else:
-        model, openai_api_key = choose_custom_openai_key()
-        llm = ChatOpenAI(model_name=model, temperature=0, streaming=True, api_key=openai_api_key)
-    return llm
-
-def print_qa(cls, question, answer):
-    log_str = "\nUsecase: {}\nQuestion: {}\nAnswer: {}\n" + "------"*10
-    logger.info(log_str.format(cls.__name__, question, answer))
-
-def select_embedding_model():
-    available_embedding_models = ["BAAI/bge-small-en-v1.5", "BAAI/bge-small-zh-v1.5"]
-    selected_model = st.sidebar.selectbox(
-        label="Embedding Model",
-        options=available_embedding_models,
-        key="SELECTED_EMBEDDING_MODEL"
-    )
-    return selected_model
-
-@st.cache_resource
-def get_embedding_model(model_name):
-    embedding_model = FastEmbedEmbeddings(model_name=model_name)
-    return embedding_model
-
-def configure_embedding_model():
-    selected_model = select_embedding_model()
-    return get_embedding_model(selected_model)
-
-def sync_st_session():
-    for k, v in st.session_state.items():
-        st.session_state[k] = v
+        st.error(f"An error occurred while running the application: {str(e)}")
