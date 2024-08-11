@@ -32,7 +32,9 @@ def configure_embedding_models():
     available_models = get_fastembed_models()
     
     if 'selected_models' not in st.session_state:
-        st.session_state.selected_models = []
+        # Select the first two models by default
+        all_models = [model for models in available_models.values() for model in models]
+        st.session_state.selected_models = all_models[:2]
 
     st.sidebar.write("### Select Embedding Models")
     for category, models in available_models.items():
@@ -40,22 +42,41 @@ def configure_embedding_models():
         cols = st.sidebar.columns(3)
         for i, model in enumerate(models):
             model_name = model.split('/')[-1]
+            button_color = "rgb(255, 0, 0)" if model in st.session_state.selected_models else "rgb(255, 255, 255)"
             if cols[i % 3].button(
                 model_name,
                 key=model,
-                type="secondary" if model in st.session_state.selected_models else "primary"
+                help=f"Select/Deselect {model_name}",
+                on_click=lambda m=model: toggle_model(m),
+                type="primary",
+                use_container_width=True
             ):
-                if model in st.session_state.selected_models:
-                    st.session_state.selected_models.remove(model)
-                else:
-                    st.session_state.selected_models.append(model)
-                st.experimental_rerun()
+                pass  # The on_click handler will handle the toggling
+
+            # Apply custom CSS to change button color
+            custom_css = f"""
+                <style>
+                    div[data-testid="stHorizontalBlock"] div[data-testid="column"] div[data-testid="stButton"] button {{
+                        background-color: {button_color};
+                        color: black;
+                        border: 1px solid black;
+                    }}
+                </style>
+            """
+            st.markdown(custom_css, unsafe_allow_html=True)
 
     st.sidebar.write("### Selected Models:")
     for model in st.session_state.selected_models:
         st.sidebar.write(f"- {model.split('/')[-1]}")
 
     return st.session_state.selected_models
+
+def toggle_model(model):
+    if model in st.session_state.selected_models:
+        st.session_state.selected_models.remove(model)
+    else:
+        st.session_state.selected_models.append(model)
+    st.experimental_rerun()
 
 def get_embedding_model(model_name):
     return FastEmbedEmbeddings(model_name=model_name)
