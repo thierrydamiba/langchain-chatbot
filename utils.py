@@ -30,24 +30,32 @@ def get_fastembed_models():
 
 def configure_embedding_models():
     available_models = get_fastembed_models()
-    selected_models = []
+    
+    if 'selected_models' not in st.session_state:
+        st.session_state.selected_models = []
 
     st.sidebar.write("### Select Embedding Models")
     for category, models in available_models.items():
         st.sidebar.write(f"#### {category}")
         cols = st.sidebar.columns(3)
         for i, model in enumerate(models):
-            if cols[i % 3].button(model.split('/')[-1], key=model):
-                if model in selected_models:
-                    selected_models.remove(model)
+            model_name = model.split('/')[-1]
+            if cols[i % 3].button(
+                model_name,
+                key=model,
+                type="secondary" if model in st.session_state.selected_models else "primary"
+            ):
+                if model in st.session_state.selected_models:
+                    st.session_state.selected_models.remove(model)
                 else:
-                    selected_models.append(model)
+                    st.session_state.selected_models.append(model)
+                st.experimental_rerun()
 
     st.sidebar.write("### Selected Models:")
-    for model in selected_models:
+    for model in st.session_state.selected_models:
         st.sidebar.write(f"- {model.split('/')[-1]}")
 
-    return selected_models
+    return st.session_state.selected_models
 
 def get_embedding_model(model_name):
     return FastEmbedEmbeddings(model_name=model_name)
