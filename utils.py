@@ -97,6 +97,11 @@ def display_results(results, texts):
         col1, col2 = st.columns([1, 2])
 
         with col1:
+            # Display average similarity with color
+            color = get_color(avg_similarity, min_score=min(avg_similarities.values()), max_score=max(avg_similarities.values()))
+            circle = f'<svg width="20" height="20"><circle cx="10" cy="10" r="8" fill="{color}" /></svg>'
+            st.markdown(f"**Average Similarity**: {circle} {avg_similarity:.4f}", unsafe_allow_html=True)
+            
             st.write("#### Individual Chunk Similarity Scores")
             # Display each chunk similarity
             for i in range(len(texts)):
@@ -106,7 +111,7 @@ def display_results(results, texts):
 
         with col2:
             st.write("#### Confusion Matrix")
-            fig, ax = plt.subplots(figsize=(8, 6))
+            fig, ax = plt.subplots(figsize=(6, 4))
             sns.heatmap(results[model_name], annot=True, fmt=".2f", cmap="coolwarm", ax=ax, cbar=True)
             ax.set_title(f"Confusion Matrix for {model_name.split('/')[-1]}")
             ax.set_xlabel("Document Index")
