@@ -40,9 +40,12 @@ class TextSimilarityComparison:
                     st.text_area(f"Text Chunk {i+1}", value=chunk, height=150, key=f"chunk_{i}")
                 
                 results = utils.process_texts(texts, self.embedding_models)
-                utils.display_results(results, texts)
+                if results:
+                    utils.display_results(results, texts)
+                else:
+                    st.error("All models failed to process the texts. Please try again or select different models.")
         elif not self.llm:
-            st.error("Please enter your OpenAI API Key in the sidebar to enable text analysis.")
+            st.error("Please enter your OpenAI API Key in the sidebar to enable LLM-based text analysis.")
         elif not text:
             st.error("Please enter some text or upload a file.")
         elif not self.embedding_models:
