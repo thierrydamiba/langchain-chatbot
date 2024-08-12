@@ -16,7 +16,7 @@ class TextSimilarityComparison:
         st.sidebar.write("1. Select one or more embedding models from the dropdown in the sidebar.")
         st.sidebar.write("2. Choose to upload a file or enter text manually.")
         st.sidebar.write("3. The app will analyze the text and determine appropriate sampling.")
-        st.sidebar.write("4. Click 'Compare Texts' to see similarity scores.")
+        st.sidebar.write("4. Click 'Compare Texts' to see similarity scores and visualizations.")
 
         input_method = st.radio("Choose input method:", ("Upload File", "Enter Text Manually"))
 
