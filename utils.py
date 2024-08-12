@@ -6,8 +6,7 @@ import PyPDF2
 import docx
 import random
 import deepeval
-from deepeval import LLMTestCase
-from deepeval.metrics import AnswerRelevancyMetric
+from deepeval import *
 
 def get_fastembed_models():
     return {
