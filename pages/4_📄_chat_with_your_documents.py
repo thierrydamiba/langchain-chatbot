@@ -42,7 +42,10 @@ class TextSimilarityComparison:
             if all(texts) and self.embedding_models:
                 with st.spinner('Processing texts...'):
                     results = utils.process_texts(texts, self.embedding_models)
-                utils.display_results(results, texts)
+                if results:
+                    utils.display_results(results, texts)
+                else:
+                    st.error("All models failed to process the texts. Please try again or select different models.")
             else:
                 st.error("Please ensure all texts are entered and at least one embedding model is selected.")
 
