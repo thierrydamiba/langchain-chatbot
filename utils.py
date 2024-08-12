@@ -5,6 +5,8 @@ import numpy as np
 import PyPDF2
 import docx
 import random
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def get_fastembed_models():
     return {
@@ -75,12 +77,6 @@ def process_texts(texts, embedding_models):
         results[model_name] = similarity_matrix
     return results
 
-def get_color(score, min_score, max_score):
-    normalized_score = (score - min_score) / (max_score - min_score)
-    r = max(0, min(255, int(255 * (1 - normalized_score))))
-    g = max(0, min(255, int(255 * normalized_score)))
-    return f'rgb({r},{g},0)'
-
 def display_results(results, texts):
     # Calculate average similarity for each model
     avg_similarities = {}
@@ -120,6 +116,22 @@ def display_results(results, texts):
                 circle = f'<svg width="15" height="15"><circle cx="7.5" cy="7.5" r="6" fill="{color}" /></svg>'
                 st.markdown(f"{circle} Similarity between Text {i + 1} and Text {j + 1}: {score:.4f}", unsafe_allow_html=True)
         st.write("---")
+
+    st.subheader("Confusion Matrix")
+    for model_name, similarity_matrix in results.items():
+        st.write(f"Confusion Matrix for {model_name.split('/')[-1]}")
+        fig, ax = plt.subplots(figsize=(10, 8))
+        sns.heatmap(similarity_matrix, annot=True, fmt=".2f", cmap="coolwarm", ax=ax, cbar=True)
+        ax.set_title(f"Confusion Matrix for {model_name.split('/')[-1]}")
+        ax.set_xlabel("Document Index")
+        ax.set_ylabel("Document Index")
+        st.pyplot(fig)
+
+def get_color(score, min_score, max_score):
+    normalized_score = (score - min_score) / (max_score - min_score)
+    r = max(0, min(255, int(255 * (1 - normalized_score))))
+    g = max(0, min(255, int(255 * normalized_score)))
+    return f'rgb({r},{g},0)'
 
 def extract_text_from_file(uploaded_file):
     file_extension = uploaded_file.name.split('.')[-1].lower()
