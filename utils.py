@@ -5,8 +5,7 @@ import numpy as np
 import PyPDF2
 import docx
 import random
-from deepeval.metrics import AnswerRelevancyMetric  # Importing DeepEval metrics
-from deepeval import LLMTestCase  # Importing DeepEval test cases
+from deepeval import *  # Importing everything from deepeval
 
 def get_fastembed_models():
     return {
