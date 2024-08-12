@@ -120,4 +120,30 @@ def display_results(results, texts):
                 score = similarity_matrix[i][j]
                 color = get_color(score, min_score, max_score)
                 circle = f'<svg width="15" height="15"><circle cx="7.5" cy="7.5" r="6" fill="{color}" /></svg>'
-                st.markdown(f"{
+                st.markdown(f"{circle} Similarity between Text {i+1} and Text {j+1}: {score:.4f}", unsafe_allow_html=True)
+        st.write("---")
+
+def extract_text_from_file(uploaded_file):
+    file_extension = uploaded_file.name.split('.')[-1].lower()
+    
+    if file_extension == 'txt':
+        return uploaded_file.getvalue().decode('utf-8')
+    elif file_extension == 'pdf':
+        pdf_reader = PyPDF2.PdfReader(uploaded_file)
+        return ' '.join(page.extract_text() for page in pdf_reader.pages)
+    elif file_extension in ['docx', 'doc']:
+        doc = docx.Document(uploaded_file)
+        return ' '.join(paragraph.text for paragraph in doc.paragraphs)
+    else:
+        raise ValueError(f"Unsupported file format: {file_extension}")
+
+def chunk_text(text, chunk_size=1000, chunk_overlap=200):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len
+    )
+    return text_splitter.split_text(text)
+
+def sample_chunks(chunks, num_samples):
+    return random.sample(chunks, min(num_samples, len(chunks)))
