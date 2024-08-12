@@ -5,7 +5,9 @@ import numpy as np
 import PyPDF2
 import docx
 import random
-from deepeval import *  # Importing everything from deepeval
+from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric  # Importing DeepEval metrics
+from deepeval.test_case import LLMTestCase  # Importing DeepEval test cases
+from deepeval import evaluate  # Importing evaluation function
 
 def get_fastembed_models():
     return {
@@ -56,7 +58,7 @@ def get_embedding_model(model_name):
 
 def process_texts(texts, embedding_models):
     results = {}
-    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5)  # Using DeepEval's Answer Relevancy Metric
+    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5)
     
     for model_name in embedding_models:
         model = get_embedding_model(model_name)
