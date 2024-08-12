@@ -87,45 +87,34 @@ def display_results(results, texts):
     # Rank models based on average similarity
     ranked_models = sorted(avg_similarities.items(), key=lambda x: x[1], reverse=True)
     
-    # Get min and max scores for color scaling
-    min_score = min(avg_similarities.values())
-    max_score = max(avg_similarities.values())
-    
-    st.subheader("Ranked Models by Average Similarity")
-    for rank, (model_name, avg_similarity) in enumerate(ranked_models, 1):
-        # Get color based on comparative score
-        color = get_color(avg_similarity, min_score, max_score)
-        
-        # Create colored circle and model name with score
-        circle = f'<svg width="20" height="20"><circle cx="10" cy="10" r="8" fill="{color}" /></svg>'
-        model_info = f"{model_name.split('/')[-1]}: {avg_similarity:.4f}"
-        
-        # Display ranking with colored circle
-        st.markdown(f"{rank}. {circle} {model_info}", unsafe_allow_html=True)
-    
-    st.subheader("Detailed Similarity Scores")
-    for model_name, similarity_matrix in results.items():
-        st.write(f"Results for {model_name.split('/')[-1]}")
-        scores = similarity_matrix[np.triu_indices_from(similarity_matrix, k=1)]
-        min_score = np.min(scores)
-        max_score = np.max(scores)
-        for i in range(len(texts)):
-            for j in range(i + 1, len(texts)):
-                score = similarity_matrix[i][j]
-                color = get_color(score, min_score, max_score)
-                circle = f'<svg width="15" height="15"><circle cx="7.5" cy="7.5" r="6" fill="{color}" /></svg>'
-                st.markdown(f"{circle} Similarity between Text {i + 1} and Text {j + 1}: {score:.4f}", unsafe_allow_html=True)
-        st.write("---")
+    st.subheader("Model Comparisons")
 
-    st.subheader("Confusion Matrix")
-    for model_name, similarity_matrix in results.items():
-        st.write(f"Confusion Matrix for {model_name.split('/')[-1]}")
-        fig, ax = plt.subplots(figsize=(10, 8))
-        sns.heatmap(similarity_matrix, annot=True, fmt=".2f", cmap="coolwarm", ax=ax, cbar=True)
-        ax.set_title(f"Confusion Matrix for {model_name.split('/')[-1]}")
-        ax.set_xlabel("Document Index")
-        ax.set_ylabel("Document Index")
-        st.pyplot(fig)
+    # Create a column for each model
+    for rank, (model_name, avg_similarity) in enumerate(ranked_models, 1):
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            # Get color based on comparative score
+            color = get_color(avg_similarity, min_score=min(avg_similarities.values()), max_score=max(avg_similarities.values()))
+            
+            # Create colored circle and model name with score
+            circle = f'<svg width="20" height="20"><circle cx="10" cy="10" r="8" fill="{color}" /></svg>'
+            model_info = f"{model_name.split('/')[-1]}: {avg_similarity:.4f}"
+            
+            # Display ranking with colored circle
+            st.markdown(f"{rank}. {circle} {model_info}", unsafe_allow_html=True)
+        
+        with col2:
+            # Display confusion matrix
+            st.write(f"Confusion Matrix for {model_name.split('/')[-1]}")
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(results[model_name], annot=True, fmt=".2f", cmap="coolwarm", ax=ax, cbar=True)
+            ax.set_title(f"Confusion Matrix")
+            ax.set_xlabel("Document Index")
+            ax.set_ylabel("Document Index")
+            st.pyplot(fig)
+
+    st.write("---")
 
 def get_color(score, min_score, max_score):
     normalized_score = (score - min_score) / (max_score - min_score)
