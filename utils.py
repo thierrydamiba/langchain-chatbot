@@ -86,7 +86,16 @@ def display_results(results, texts):
     
     # Rank models based on average similarity
     ranked_models = sorted(avg_similarities.items(), key=lambda x: x[1], reverse=True)
+
+    # Summary of average similarities
+    st.subheader("Summary of Average Similarities")
+    for rank, (model_name, avg_similarity) in enumerate(ranked_models, 1):
+        color = get_color(avg_similarity, min_score=min(avg_similarities.values()), max_score=max(avg_similarities.values()))
+        circle = f'<svg width="20" height="20"><circle cx="10" cy="10" r="8" fill="{color}" /></svg>'
+        st.markdown(f"{rank}. {circle} **{model_name.split('/')[-1]}**: {avg_similarity:.4f}", unsafe_allow_html=True)
     
+    st.write("---")
+
     st.subheader("Model Comparisons")
 
     # Display each model's results
@@ -98,8 +107,6 @@ def display_results(results, texts):
 
         with col1:
             # Display average similarity with color
-            color = get_color(avg_similarity, min_score=min(avg_similarities.values()), max_score=max(avg_similarities.values()))
-            circle = f'<svg width="20" height="20"><circle cx="10" cy="10" r="8" fill="{color}" /></svg>'
             st.markdown(f"**Average Similarity**: {circle} {avg_similarity:.4f}", unsafe_allow_html=True)
             
             st.write("#### Individual Chunk Similarity Scores")
