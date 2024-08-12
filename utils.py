@@ -7,7 +7,6 @@ import docx
 import random
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric  # Importing DeepEval metrics
 from deepeval.test_case import LLMTestCase  # Importing DeepEval test cases
-from deepeval import evaluate  # Importing evaluation function
 
 def get_fastembed_models():
     return {
@@ -72,7 +71,11 @@ def process_texts(texts, embedding_models):
                     input=texts[i],
                     actual_output=texts[j]
                 )
-                answer_relevancy_metric.measure(test_case)
+                try:
+                    answer_relevancy_metric.measure(test_case)
+                except BrokenPipeError:
+                    # Handle the error gracefully
+                    st.error("A BrokenPipeError occurred while measuring the metric.")
                 similarity_matrix[i][j] = answer_relevancy_metric.score
                 similarity_matrix[j][i] = answer_relevancy_metric.score
         
