@@ -45,7 +45,7 @@ class TextSimilarityComparison:
                 else:
                     st.error("All models failed to process the texts. Please try again or select different models.")
         elif not self.llm:
-            st.error("Please enter your OpenAI API Key in the sidebar to enable LLM-based text analysis.")
+            st.error("Please enter your OpenAI API Key in the sidebar to enable text analysis.")
         elif not text:
             st.error("Please enter some text or upload a file.")
         elif not self.embedding_models:
