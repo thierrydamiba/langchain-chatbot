@@ -5,7 +5,8 @@ import numpy as np
 import PyPDF2
 import docx
 import random
-import pandas as pd
+from deepeval import LLMTestCase
+from deepeval.metrics import AnswerRelevancyMetric
 
 def get_fastembed_models():
     return {
@@ -54,11 +55,10 @@ def configure_embedding_models():
 def get_embedding_model(model_name):
     return FastEmbedEmbeddings(model_name=model_name)
 
-def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
 def process_texts(texts, embedding_models):
     results = {}
+    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5)
+    
     for model_name in embedding_models:
         model = get_embedding_model(model_name)
         embeddings = model.embed_documents(texts)
@@ -66,9 +66,13 @@ def process_texts(texts, embedding_models):
         similarity_matrix = np.zeros((len(texts), len(texts)))
         for i in range(len(texts)):
             for j in range(i+1, len(texts)):
-                similarity = cosine_similarity(embeddings[i], embeddings[j])
-                similarity_matrix[i][j] = similarity
-                similarity_matrix[j][i] = similarity
+                test_case = LLMTestCase(
+                    input=texts[i],
+                    actual_output=texts[j]
+                )
+                answer_relevancy_metric.measure(test_case)
+                similarity_matrix[i][j] = answer_relevancy_metric.score
+                similarity_matrix[j][i] = answer_relevancy_metric.score
         
         results[model_name] = similarity_matrix
     return results
@@ -116,30 +120,4 @@ def display_results(results, texts):
                 score = similarity_matrix[i][j]
                 color = get_color(score, min_score, max_score)
                 circle = f'<svg width="15" height="15"><circle cx="7.5" cy="7.5" r="6" fill="{color}" /></svg>'
-                st.markdown(f"{circle} Similarity between Text {i+1} and Text {j+1}: {score:.4f}", unsafe_allow_html=True)
-        st.write("---")
-
-def extract_text_from_file(uploaded_file):
-    file_extension = uploaded_file.name.split('.')[-1].lower()
-    
-    if file_extension == 'txt':
-        return uploaded_file.getvalue().decode('utf-8')
-    elif file_extension == 'pdf':
-        pdf_reader = PyPDF2.PdfReader(uploaded_file)
-        return ' '.join(page.extract_text() for page in pdf_reader.pages)
-    elif file_extension in ['docx', 'doc']:
-        doc = docx.Document(uploaded_file)
-        return ' '.join(paragraph.text for paragraph in doc.paragraphs)
-    else:
-        raise ValueError(f"Unsupported file format: {file_extension}")
-
-def chunk_text(text, chunk_size=1000, chunk_overlap=200):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        length_function=len
-    )
-    return text_splitter.split_text(text)
-
-def sample_chunks(chunks, num_samples):
-    return random.sample(chunks, min(num_samples, len(chunks)))
+                st.markdown(f"{
