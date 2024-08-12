@@ -89,27 +89,26 @@ def display_results(results, texts):
     
     st.subheader("Model Comparisons")
 
-    # Create a column for each model
+    # Display each model's results
     for rank, (model_name, avg_similarity) in enumerate(ranked_models, 1):
+        st.markdown(f"### Model {rank}: {model_name.split('/')[-1]}")
+        
+        # Create columns for chunk similarity and confusion matrix
         col1, col2 = st.columns([1, 2])
 
         with col1:
-            # Get color based on comparative score
-            color = get_color(avg_similarity, min_score=min(avg_similarities.values()), max_score=max(avg_similarities.values()))
-            
-            # Create colored circle and model name with score
-            circle = f'<svg width="20" height="20"><circle cx="10" cy="10" r="8" fill="{color}" /></svg>'
-            model_info = f"{model_name.split('/')[-1]}: {avg_similarity:.4f}"
-            
-            # Display ranking with colored circle
-            st.markdown(f"{rank}. {circle} {model_info}", unsafe_allow_html=True)
-        
+            st.write("#### Individual Chunk Similarity Scores")
+            # Display each chunk similarity
+            for i in range(len(texts)):
+                for j in range(i + 1, len(texts)):
+                    score = results[model_name][i][j]
+                    st.write(f"Similarity between Chunk {i + 1} and Chunk {j + 1}: {score:.4f}")
+
         with col2:
-            # Display confusion matrix
-            st.write(f"Confusion Matrix for {model_name.split('/')[-1]}")
+            st.write("#### Confusion Matrix")
             fig, ax = plt.subplots(figsize=(8, 6))
             sns.heatmap(results[model_name], annot=True, fmt=".2f", cmap="coolwarm", ax=ax, cbar=True)
-            ax.set_title(f"Confusion Matrix")
+            ax.set_title(f"Confusion Matrix for {model_name.split('/')[-1]}")
             ax.set_xlabel("Document Index")
             ax.set_ylabel("Document Index")
             st.pyplot(fig)
