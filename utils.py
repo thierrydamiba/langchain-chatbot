@@ -22,6 +22,15 @@ def get_fastembed_models():
             "jinaai/jina-embeddings-v2-base-code", "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
             "snowflake/snowflake-arctic-embed-l", "thenlper/gte-large", "BAAI/bge-large-en-v1.5",
             "intfloat/multilingual-e5-large"
+        ],
+        "Sparse Text Models": [
+            "Qdrant/bm25", "Qdrant/bm42-all-minilm-l6-v2-attentions",
+            "prithvida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v1"
+        ],
+        "Late Interaction Models": ["colbert-ir/colbertv2.0"],
+        "Image Models": [
+            "Qdrant/resnet50-onnx", "Qdrant/clip-ViT-B-32-vision",
+            "Qdrant/Unicom-ViT-B-32", "Qdrant/Unicom-ViT-B-16"
         ]
     }
 
@@ -44,7 +53,15 @@ def configure_embedding_models():
     return selected_models
 
 def get_embedding_model(model_name):
-    return FastEmbedEmbeddings(model_name=model_name)
+    try:
+        return FastEmbedEmbeddings(model_name=model_name)
+    except PermissionError:
+        st.error(f"Unable to download the model '{model_name}'. This may be due to restrictions in the current environment.")
+        st.error("Please try using one of the BGE models, which are pre-installed.")
+        return None
+    except Exception as e:
+        st.error(f"An error occurred while loading the model '{model_name}': {str(e)}")
+        return None
 
 def cosine_similarity(vec_a, vec_b):
     """Compute the cosine similarity between two vectors."""
@@ -55,6 +72,9 @@ def process_texts(texts, embedding_models):
     
     for model_name in embedding_models:
         model = get_embedding_model(model_name)
+        if model is None:
+            continue
+        
         embeddings = model.embed_documents(texts)
         
         similarity_matrix = np.zeros((len(texts), len(texts)))
@@ -69,6 +89,10 @@ def process_texts(texts, embedding_models):
     return results
 
 def display_results(results, texts):
+    if not results:
+        st.error("No results to display. All models failed to process the texts.")
+        return
+
     # Calculate average similarity for each model
     avg_similarities = {}
     for model_name, similarity_matrix in results.items():
