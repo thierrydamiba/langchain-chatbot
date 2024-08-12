@@ -1,3 +1,7 @@
+import sys
+from contextlib import contextmanager
+from io import StringIO
+
 import streamlit as st
 from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -5,8 +9,19 @@ import numpy as np
 import PyPDF2
 import docx
 import random
-from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric  # Importing DeepEval metrics
-from deepeval.test_case import LLMTestCase  # Importing DeepEval test cases
+from deepeval.metrics import AnswerRelevancyMetric
+from deepeval.test_case import LLMTestCase
+
+# Context manager to suppress the output
+@contextmanager
+def suppress_output():
+    new_target = StringIO()
+    old_target = sys.stdout
+    sys.stdout = new_target
+    try:
+        yield new_target
+    finally:
+        sys.stdout = old_target
 
 def get_fastembed_models():
     return {
@@ -72,9 +87,9 @@ def process_texts(texts, embedding_models):
                     actual_output=texts[j]
                 )
                 try:
-                    answer_relevancy_metric.measure(test_case)
+                    with suppress_output():  # Suppress the output of the measurement
+                        answer_relevancy_metric.measure(test_case)
                 except BrokenPipeError:
-                    # Handle the error gracefully
                     st.error("A BrokenPipeError occurred while measuring the metric.")
                 similarity_matrix[i][j] = answer_relevancy_metric.score
                 similarity_matrix[j][i] = answer_relevancy_metric.score
