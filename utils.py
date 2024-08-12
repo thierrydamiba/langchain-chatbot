@@ -12,7 +12,8 @@ def get_fastembed_models():
     return {
         "Text Models": [
             "BAAI/bge-small-en-v1.5", "BAAI/bge-small-zh-v1.5"
-    }
+        ]
+            }
 
 def configure_embedding_models():
     available_models = get_fastembed_models()
