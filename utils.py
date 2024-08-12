@@ -73,8 +73,22 @@ def process_texts(texts, embedding_models):
     return results
 
 def display_results(results, texts):
+    # Calculate average similarity for each model
+    avg_similarities = {}
     for model_name, similarity_matrix in results.items():
-        st.subheader(f"Results for {model_name.split('/')[-1]}")
+        avg_similarity = np.mean(similarity_matrix[np.triu_indices_from(similarity_matrix, k=1)])
+        avg_similarities[model_name] = avg_similarity
+    
+    # Rank models based on average similarity
+    ranked_models = sorted(avg_similarities.items(), key=lambda x: x[1], reverse=True)
+    
+    st.subheader("Ranked Models by Average Similarity")
+    for rank, (model_name, avg_similarity) in enumerate(ranked_models, 1):
+        st.write(f"{rank}. {model_name.split('/')[-1]}: {avg_similarity:.4f}")
+    
+    st.subheader("Detailed Similarity Scores")
+    for model_name, similarity_matrix in results.items():
+        st.write(f"Results for {model_name.split('/')[-1]}")
         for i in range(len(texts)):
             for j in range(i+1, len(texts)):
                 st.write(f"Similarity between Text {i+1} and Text {j+1}: {similarity_matrix[i][j]:.4f}")
