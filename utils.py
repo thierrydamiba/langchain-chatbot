@@ -1,7 +1,3 @@
-import sys
-from contextlib import contextmanager
-from io import StringIO
-
 import streamlit as st
 from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -9,19 +5,6 @@ import numpy as np
 import PyPDF2
 import docx
 import random
-from deepeval.metrics import AnswerRelevancyMetric
-from deepeval.test_case import LLMTestCase
-
-# Context manager to suppress the output
-@contextmanager
-def suppress_output():
-    new_target = StringIO()
-    old_target = sys.stdout
-    sys.stdout = new_target
-    try:
-        yield new_target
-    finally:
-        sys.stdout = old_target
 
 def get_fastembed_models():
     return {
@@ -70,9 +53,12 @@ def configure_embedding_models():
 def get_embedding_model(model_name):
     return FastEmbedEmbeddings(model_name=model_name)
 
+def cosine_similarity(vec_a, vec_b):
+    """Compute the cosine similarity between two vectors."""
+    return np.dot(vec_a, vec_b) / (np.linalg.norm(vec_a) * np.linalg.norm(vec_b))
+
 def process_texts(texts, embedding_models):
     results = {}
-    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5)
     
     for model_name in embedding_models:
         model = get_embedding_model(model_name)
@@ -82,17 +68,9 @@ def process_texts(texts, embedding_models):
         
         for i in range(len(texts)):
             for j in range(i + 1, len(texts)):
-                test_case = LLMTestCase(
-                    input=texts[i],
-                    actual_output=texts[j]
-                )
-                try:
-                    with suppress_output():  # Suppress the output of the measurement
-                        answer_relevancy_metric.measure(test_case)
-                except BrokenPipeError:
-                    st.error("A BrokenPipeError occurred while measuring the metric.")
-                similarity_matrix[i][j] = answer_relevancy_metric.score
-                similarity_matrix[j][i] = answer_relevancy_metric.score
+                similarity = cosine_similarity(embeddings[i], embeddings[j])
+                similarity_matrix[i][j] = similarity
+                similarity_matrix[j][i] = similarity
         
         results[model_name] = similarity_matrix
     return results
