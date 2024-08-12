@@ -79,3 +79,6 @@ def chunk_text(text, chunk_size=1000, chunk_overlap=200):
         length_function=len
     )
     return text_splitter.split_text(text)
+
+def sample_chunks(chunks, num_samples):
+    return random.sample(chunks, min(num_samples, len(chunks)))
