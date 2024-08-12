@@ -16,7 +16,7 @@ class TextSimilarityComparison:
         st.sidebar.write("1. Select one or more embedding models from the dropdown in the sidebar.")
         st.sidebar.write("2. Choose to upload a file or enter text manually.")
         st.sidebar.write("3. The app will analyze the text and determine appropriate sampling.")
-        st.sidebar.write("4. Click 'Compare Texts' to see similarity scores and visualizations.")
+        st.sidebar.write("4. Click 'Compare Texts' to see similarity scores.")
 
         input_method = st.radio("Choose input method:", ("Upload File", "Enter Text Manually"))
 
@@ -40,12 +40,9 @@ class TextSimilarityComparison:
                     st.text_area(f"Text Chunk {i+1}", value=chunk, height=150, key=f"chunk_{i}")
                 
                 results = utils.process_texts(texts, self.embedding_models)
-                if results:
-                    utils.display_results(results, texts)
-                else:
-                    st.error("All models failed to process the texts. Please try again or select different models.")
+                utils.display_results(results, texts)
         elif not self.llm:
-            st.error("Please enter your OpenAI API Key in the sidebar to enable LLM-based text analysis.")
+            st.error("Please enter your OpenAI API Key in the sidebar to enable text analysis.")
         elif not text:
             st.error("Please enter some text or upload a file.")
         elif not self.embedding_models:
