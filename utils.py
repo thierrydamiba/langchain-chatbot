@@ -22,15 +22,6 @@ def get_fastembed_models():
             "jinaai/jina-embeddings-v2-base-code", "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
             "snowflake/snowflake-arctic-embed-l", "thenlper/gte-large", "BAAI/bge-large-en-v1.5",
             "intfloat/multilingual-e5-large"
-        ],
-        "Sparse Text Models": [
-            "Qdrant/bm25", "Qdrant/bm42-all-minilm-l6-v2-attentions",
-            "prithvida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v1"
-        ],
-        "Late Interaction Models": ["colbert-ir/colbertv2.0"],
-        "Image Models": [
-            "Qdrant/resnet50-onnx", "Qdrant/clip-ViT-B-32-vision",
-            "Qdrant/Unicom-ViT-B-32", "Qdrant/Unicom-ViT-B-16"
         ]
     }
 
