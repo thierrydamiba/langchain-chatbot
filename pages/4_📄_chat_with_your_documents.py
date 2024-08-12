@@ -8,19 +8,14 @@ st.write('[![view source code ](https://img.shields.io/badge/view_source_code-gr
 
 class TextSimilarityComparison:
     def __init__(self):
-        try:
-            self.embedding_models = utils.configure_embedding_models()
-        except Exception as e:
-            st.error(f"An error occurred during initialization: {str(e)}")
-            st.error("Using default model: BAAI/bge-small-en-v1.5")
-            self.embedding_models = ["BAAI/bge-small-en-v1.5"]
+        self.embedding_models = utils.configure_embedding_models()
 
     def main(self):
         st.sidebar.write("### Instructions")
         st.sidebar.write("1. Select one or more embedding models from the dropdown in the sidebar.")
         st.sidebar.write("2. Choose to upload a file or enter text manually.")
         st.sidebar.write("3. If uploading a file, select the number of text chunks to compare.")
-        st.sidebar.write("4. Click 'Compare Texts' to see similarity scores and visualizations.")
+        st.sidebar.write("4. Click 'Compare Texts' to see similarity scores.")
 
         input_method = st.radio("Choose input method:", ("Upload File", "Enter Text Manually"))
 
@@ -47,10 +42,7 @@ class TextSimilarityComparison:
             if all(texts) and self.embedding_models:
                 with st.spinner('Processing texts...'):
                     results = utils.process_texts(texts, self.embedding_models)
-                if results:
-                    utils.display_results(results, texts)
-                else:
-                    st.error("All models failed to process the texts. Please try again or select different models.")
+                utils.display_results(results, texts)
             else:
                 st.error("Please ensure all texts are entered and at least one embedding model is selected.")
 
