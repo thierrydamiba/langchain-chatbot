@@ -11,27 +11,7 @@ import seaborn as sns
 def get_fastembed_models():
     return {
         "Text Models": [
-            "BAAI/bge-small-en-v1.5", "BAAI/bge-small-zh-v1.5", "snowflake/snowflake-arctic-embed-xs",
-            "sentence-transformers/all-MiniLM-L6-v2", "jinaai/jina-embeddings-v2-small-en",
-            "BAAI/bge-small-en", "snowflake/snowflake-arctic-embed-s", "nomic-ai/nomic-embed-text-v1.5-Q",
-            "BAAI/bge-base-en-v1.5", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-            "Qdrant/clip-ViT-B-32-text", "jinaai/jina-embeddings-v2-base-de", "BAAI/bge-base-en",
-            "snowflake/snowflake-arctic-embed-m", "nomic-ai/nomic-embed-text-v1.5",
-            "jinaai/jina-embeddings-v2-base-en", "nomic-ai/nomic-embed-text-v1",
-            "snowflake/snowflake-arctic-embed-m-long", "mixedbread-ai/mxbai-embed-large-v1",
-            "jinaai/jina-embeddings-v2-base-code", "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
-            "snowflake/snowflake-arctic-embed-l", "thenlper/gte-large", "BAAI/bge-large-en-v1.5",
-            "intfloat/multilingual-e5-large"
-        ],
-        "Sparse Text Models": [
-            "Qdrant/bm25", "Qdrant/bm42-all-minilm-l6-v2-attentions",
-            "prithvida/Splade_PP_en_v1", "prithivida/Splade_PP_en_v1"
-        ],
-        "Late Interaction Models": ["colbert-ir/colbertv2.0"],
-        "Image Models": [
-            "Qdrant/resnet50-onnx", "Qdrant/clip-ViT-B-32-vision",
-            "Qdrant/Unicom-ViT-B-32", "Qdrant/Unicom-ViT-B-16"
-        ]
+            "BAAI/bge-small-en-v1.5", "BAAI/bge-small-zh-v1.5"
     }
 
 def configure_embedding_models():
