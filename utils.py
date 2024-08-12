@@ -5,6 +5,7 @@ import numpy as np
 import PyPDF2
 import docx
 import random
+import deepeval
 from deepeval import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric
 
