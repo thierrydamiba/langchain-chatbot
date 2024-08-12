@@ -5,8 +5,8 @@ import numpy as np
 import PyPDF2
 import docx
 import random
-import deepeval
-from deepeval import *
+from deepeval.metrics import AnswerRelevancyMetric  # Importing DeepEval metrics
+from deepeval import LLMTestCase  # Importing DeepEval test cases
 
 def get_fastembed_models():
     return {
@@ -57,15 +57,16 @@ def get_embedding_model(model_name):
 
 def process_texts(texts, embedding_models):
     results = {}
-    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5)
+    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5)  # Using DeepEval's Answer Relevancy Metric
     
     for model_name in embedding_models:
         model = get_embedding_model(model_name)
         embeddings = model.embed_documents(texts)
         
         similarity_matrix = np.zeros((len(texts), len(texts)))
+        
         for i in range(len(texts)):
-            for j in range(i+1, len(texts)):
+            for j in range(i + 1, len(texts)):
                 test_case = LLMTestCase(
                     input=texts[i],
                     actual_output=texts[j]
@@ -116,11 +117,11 @@ def display_results(results, texts):
         min_score = np.min(scores)
         max_score = np.max(scores)
         for i in range(len(texts)):
-            for j in range(i+1, len(texts)):
+            for j in range(i + 1, len(texts)):
                 score = similarity_matrix[i][j]
                 color = get_color(score, min_score, max_score)
                 circle = f'<svg width="15" height="15"><circle cx="7.5" cy="7.5" r="6" fill="{color}" /></svg>'
-                st.markdown(f"{circle} Similarity between Text {i+1} and Text {j+1}: {score:.4f}", unsafe_allow_html=True)
+                st.markdown(f"{circle} Similarity between Text {i + 1} and Text {j + 1}: {score:.4f}", unsafe_allow_html=True)
         st.write("---")
 
 def extract_text_from_file(uploaded_file):
